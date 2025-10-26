@@ -1,0 +1,47 @@
+---
+# External Service for Postgres running on local network
+# This creates a DNS entry in k8s that points to your external Postgres server
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-external
+  labels:
+    app: postgres
+    type: external
+spec:
+  type: ExternalName
+  externalName: postgres.local  # Replace with actual hostname/IP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+---
+# Alternative: Using Endpoints for IP-based external service
+# Uncomment this section if you prefer to use a static IP instead of DNS
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: postgres-external
+#   labels:
+#     app: postgres
+#     type: external
+# spec:
+#   type: ClusterIP
+#   clusterIP: None
+#   ports:
+#   - port: 5432
+#     targetPort: 5432
+#     protocol: TCP
+#     name: postgres
+# ---
+# apiVersion: v1
+# kind: Endpoints
+# metadata:
+#   name: postgres-external
+# subsets:
+# - addresses:
+#   - ip: 192.168.1.100  # Replace with your Postgres server IP
+#   ports:
+#   - port: 5432
+#     name: postgres

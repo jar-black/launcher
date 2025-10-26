@@ -1,0 +1,87 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: production
+
+bases:
+- ../../base
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+
+# Patch replicas for prod
+replicas:
+- name: app
+  count: 3
+
+# Patch image for prod - NEVER use :latest in production!
+images:
+- name: your-registry/your-app
+  newName: your-registry/your-app
+  newTag: "1.0.0"  # Use specific version tags
+
+# ConfigMap patches for prod
+configMapGenerator:
+- name: app-config
+  behavior: merge
+  literals:
+  - environment=production
+  - log.level=WARN
+  - db.host=postgres-prod.local
+  - db.name=app_production
+  - db.pool.size=20
+
+# Secret generator for prod
+secretGenerator:
+- name: app-secrets
+  envs:
+  - secrets.env
+
+patches:
+- target:
+    kind: Ingress
+    name: app
+  patch: |-
+    - op: replace
+      path: /spec/rules/0/host
+      value: app.example.com
+    - op: replace
+      path: /spec/tls/0/hosts/0
+      value: app.example.com
+
+# Higher resource requirements for prod
+- target:
+    kind: Deployment
+    name: app
+  patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/memory
+      value: "512Mi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/requests/cpu
+      value: "200m"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/memory
+      value: "1Gi"
+    - op: replace
+      path: /spec/template/spec/containers/0/resources/limits/cpu
+      value: "1000m"
+
+# Add PodDisruptionBudget for prod
+- target:
+    kind: Deployment
+    name: app
+  patch: |-
+    - op: add
+      path: /spec/template/spec/affinity
+      value:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: app
+              topologyKey: kubernetes.io/hostname

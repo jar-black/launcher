@@ -1,0 +1,26 @@
+# Kubernetes Secrets
+k8s/overlays/*/secrets.env
+k8s/secrets/*.env
+!k8s/secrets/*.env.example
+
+# Generated manifests
+manifests-*.yaml
+
+# Backups
+backups/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
