@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: stage
+
+bases:
+- ../../base
+
+namePrefix: stage-
+
+commonLabels:
+  environment: stage
+
+# Patch replicas for stage
+replicas:
+- name: app
+  count: 2
+
+# Patch image for stage
+images:
+- name: your-registry/your-app
+  newName: your-registry/your-app
+  newTag: stage-latest
+
+# ConfigMap patches for stage
+configMapGenerator:
+- name: app-config
+  behavior: merge
+  literals:
+  - environment=staging
+  - log.level=INFO
+  - db.host=postgres-stage.local
+  - db.name=app_stage
+  - db.pool.size=15
+
+# Secret generator for stage
+secretGenerator:
+- name: app-secrets
+  envs:
+  - secrets.env
+
+patches:
+- target:
+    kind: Ingress
+    name: app
+  patch: |-
+    - op: replace
+      path: /spec/rules/0/host
+      value: stage.app.example.com
+    - op: replace
+      path: /spec/tls/0/hosts/0
+      value: stage.app.example.com
